@@ -69,7 +69,7 @@ final class CloudProbe {
         pingTask?.cancel(); pingTask = nil
         pollTask?.cancel(); pollTask = nil
         NSApplication.shared.unregisterForRemoteNotifications()
-        SessionPublisher.shared.stop()\n        AndroidRelayServer.shared.stop()
+        SessionPublisher.shared.stop()\n        AndroidDiscoveryResponder.shared.stop()\n        AndroidRelayServer.shared.stop()
         ApprovalRelay.shared.stop()
         QuestionRelay.shared.stop()
         ServiceDetailRunner.shared.stop()
@@ -92,7 +92,7 @@ final class CloudProbe {
         #endif
         log("starting (\(appLabel), \(build) build, container \(Self.containerID))")
         NSApplication.shared.registerForRemoteNotifications()
-        SessionPublisher.shared.start()\n        AndroidRelayServer.shared.start()
+        SessionPublisher.shared.start()\n        AndroidRelayServer.shared.start()\n        AndroidDiscoveryResponder.shared.start()
         ApprovalRelay.shared.start()
         QuestionRelay.shared.start()
         ServiceDetailRunner.shared.start()
