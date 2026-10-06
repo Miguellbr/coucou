@@ -28,7 +28,7 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
     }
 
     suspend fun streamSessions(onSessions: (List<Session>) -> Unit) = withContext(Dispatchers.IO) {
-        val match = Regex(":(\\\\d+)$").find(baseUrl)
+        val match = Regex(":(\\d+)$").find(baseUrl)
         val port = match?.groupValues?.get(1)?.toIntOrNull() ?: 8765
         val url = baseUrl.removeSuffix(":$port") + ":" + (port + 2) + "/events"
         val c = URL(url).openConnection() as HttpURLConnection
