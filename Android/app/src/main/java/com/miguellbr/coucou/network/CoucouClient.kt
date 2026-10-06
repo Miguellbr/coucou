@@ -68,6 +68,34 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
         request("/approval", "POST", body)?.contains("\"accepted\":true") == true
     }
 
+    private fun parseSessions(raw: String): List<Session> {
+        if (raw.isBlank()) return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            (0 until array.length()).map { i ->
+                val item = array.getJSONObject(i)
+                val steps = item.optJSONArray("steps")
+                val stepCount = item.optInt("stepCount", steps?.length() ?: 0)
+                Session(
+                    pillId = item.optString("pillId"),
+                    name = item.optString("name"),
+                    color = item.optString("color"),
+                    state = item.optString("state"),
+                    stepIndex = item.optInt("stepIndex"),
+                    stepCount = stepCount,
+                    cwd = item.optString("cwd"),
+                    finalLine = item.optString("finalLine"),
+                    needsApproval = item.optBoolean("needsApproval"),
+                    approvalFingerprint = item.optString("approvalFingerprint"),
+                    needsAnswer = item.optBoolean("needsAnswer"),
+                    questionFingerprint = item.optString("questionFingerprint"),
+                    questionPayload = parseQuestion(item.optString("questionPayload")),
+                    acceptsInstructions = item.optBoolean("acceptsInstructions")
+                )
+            }
+        }.getOrDefault(emptyList())
+    }
+
     private fun parseQuestion(raw: String): QuestionPayload? {
         if (raw.isBlank()) return null
         return runCatching {
