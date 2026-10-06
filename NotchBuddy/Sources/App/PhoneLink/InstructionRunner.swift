@@ -113,6 +113,35 @@ final class InstructionRunner {
         run(claude: claude, text: text, sessionId: session.sessionId, cwd: session.cwd, pillId: pillId)
     }
 
+    /// Runs an instruction received from the Android LAN relay.
+    /// All safety checks remain on the Mac: feature flag, agent identity,
+    /// known session, existing working directory, length and one-run-at-a-time.
+    func submitAndroidInstruction(pillId: String, text: String) -> Bool {
+        guard Self.isEnabled else { log("Android instruction ignored: feature is off"); return false }
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty, text.count <= 8000 else { log("Android instruction ignored: empty or too long"); return false }
+        guard pillId == "integration_claude" || pillId == "agent_cursor" else { log("Android instruction ignored: (pillId) can't take instructions"); return false }
+        guard let session = TurnRecorder.shared.lastSession(for: pillId) else {
+            log("Android instruction ignored: no session for (pillId)")
+            return false
+        }
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: session.cwd, isDirectory: &isDirectory), isDirectory.boolValue else {
+            log("Android instruction ignored: session folder is gone")
+            return false
+        }
+        guard running[session.sessionId] == nil else {
+            log("Android instruction ignored: instruction already running")
+            return false
+        }
+        guard let claude = Self.claudeExecutable() else {
+            log("Android instruction ignored: claude command not found")
+            return false
+        }
+        run(claude: claude, text: text, sessionId: session.sessionId, cwd: session.cwd, pillId: pillId)
+        return true
+    }
+
     // MARK: Running
 
     private func run(claude: String, text: String, sessionId: String, cwd: String, pillId: String) {
