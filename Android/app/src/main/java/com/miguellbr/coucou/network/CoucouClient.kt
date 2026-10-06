@@ -4,10 +4,20 @@ import com.miguellbr.coucou.model.Session
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
 class CoucouClient(private val baseUrl: String, private val token: String) {
+    suspend fun answer(fingerprint: String, selections: List<List<String>>): Boolean = withContext(Dispatchers.IO) {
+        val json = JSONObject().apply {
+            put("fingerprint", fingerprint)
+            put("selections", JSONArray().apply {
+                selections.forEach { put(JSONArray(it)) }
+            })
+        }
+        request("/question", "POST", json.toString())?.contains("\\"accepted\\":true") == true
+    }
     suspend fun isAlive(): Boolean = withContext(Dispatchers.IO) {
         request("/health")?.contains("\"ok\":true") == true
     }
