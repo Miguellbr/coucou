@@ -61,7 +61,17 @@ class CoucouService : Service() {
                     val sessions = runCatching { client.sessions() }.getOrNull()
                     if (sessions != null) {
                         startForeground(NOTIFICATION_ID, notification("Conectado ao Mac"))
-                        val active = sessions.map { it.approvalFingerprint }.toSet()
+                        val active = sessions.flatMap { listOf(it.approvalFingerprint, "question:" + it.questionFingerprint) }.toSet()
+                        sessions.filter { it.needsAnswer && it.questionFingerprint.isNotBlank() }.forEach { session ->
+                            if (notified.add("question:" + session.questionFingerprint)) {
+                                ApprovalNotification.showQuestion(
+                                    this@CoucouService,
+                                    session.name,
+                                    session.questionFingerprint,
+                                    session.questionPayload?.items?.firstOrNull()?.question ?: "O Coucou precisa de uma resposta."
+                                )
+                            }
+                        }
                         sessions.filter { it.needsApproval && it.approvalFingerprint.isNotBlank() }.forEach { session ->
                             if (notified.add(session.approvalFingerprint)) {
                                 ApprovalNotification.show(
