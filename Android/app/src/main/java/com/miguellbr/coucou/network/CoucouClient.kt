@@ -60,20 +60,7 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
     }
     suspend fun sessions(): List<Session> = withContext(Dispatchers.IO) {
         val body = request("/sessions") ?: return@withContext emptyList()
-        return@withContext parseSessions(body)
-            for (i in 0 until array.length()) {
-                val o = array.getJSONObject(i)
-                add(Session(
-                    o.getString("pillId"), o.getString("name"), o.getString("color"),
-                    o.getString("state"), o.getInt("stepIndex"), o.getJSONArray("steps").length(),
-                    o.getString("cwd"), o.getString("finalLine"), 
-                    o.getBoolean("needsApproval"), o.getString("approvalFingerprint"),
-                    o.getBoolean("needsAnswer"), o.getString("questionFingerprint"),
-                    parseQuestion(o.optString("questionPayload")),
-                    o.optBoolean("acceptsInstructions")
-                ))
-            }
-        }
+        parseSessions(body)
     }
 
     suspend fun approval(fingerprint: String, decision: String): Boolean = withContext(Dispatchers.IO) {
