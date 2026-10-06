@@ -24,12 +24,11 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
     private var pollJob: Job? = null
     private val discovery = RelayDiscovery()
     private val prefs = application.getSharedPreferences("coucou", 0)
-    private val notified = mutableSetOf<String>()
 
     fun discoverAndConnect() {
         viewModelScope.launch {
             val candidate = discovery.discover() ?: return@launch
-            connect("http://${candidate.host}:${candidate.port}", candidate.token)
+            connect("http://" + candidate.host + ":" + candidate.port, candidate.token)
         }
     }
 
@@ -44,33 +43,16 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
             while (true) {
                 val result = runCatching { client!!.sessions() }
                 _connected.value = result.isSuccess
-                result.onSuccess { updateSessions(it) }
+                result.onSuccess { _sessions.value = it }
                 delay(2000)
             }
         }
-    }
-
-    private fun updateSessions(value: List<Session>) {
-        _sessions.value = value
-        value.filter { it.needsApproval && it.approvalFingerprint.isNotBlank() }.forEach { session ->
-            if (notified.add(session.approvalFingerprint)) {
-                ApprovalNotification.show(
-                    getApplication(),
-                    session.name,
-                    session.approvalFingerprint,
-                    session.finalLine.ifBlank { "Uma ação precisa da sua aprovação." }
-                )
-            }
-        }
-        val active = value.map { it.approvalFingerprint }.toSet()
-        notified.retainAll(active)
     }
 
     fun approve(session: Session) {
         viewModelScope.launch {
             if (client?.approval(session.approvalFingerprint, "allow") == true) {
                 ApprovalNotification.cancel(getApplication(), session.approvalFingerprint)
-                notified.remove(session.approvalFingerprint)
             }
         }
     }
@@ -79,7 +61,6 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             if (client?.approval(session.approvalFingerprint, "deny") == true) {
                 ApprovalNotification.cancel(getApplication(), session.approvalFingerprint)
-                notified.remove(session.approvalFingerprint)
             }
         }
     }
