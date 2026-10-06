@@ -42,7 +42,9 @@ final class AndroidRelayServer {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 128 * 1024) { [weak self] chunk, _, complete, error in
             var buffer = data
             if let chunk { buffer.append(chunk) }
-            if let end = buffer.range(of: Data("\r\n\r\n".utf8)) {
+            if let end = buffer.range(of: Data("\r
+\r
+".utf8)) {
                 let headerText = String(decoding: buffer[..<end.lowerBound], as: UTF8.self)
                 let length = Self.headerValue(headerText, "content-length").flatMap(Int.init) ?? 0
                 let bodyStart = end.upperBound
@@ -56,7 +58,8 @@ final class AndroidRelayServer {
     }
 
     private nonisolated func process(_ connection: NWConnection, request: String, body: Data) {
-        let parts = request.split(separator: "\n").first?.split(separator: " ") ?? []
+        let parts = request.split(separator: "
+").first?.split(separator: " ") ?? []
         guard parts.count >= 2 else { Self.respond(connection, 400, #"{"error":"bad request"}"#); return }
         let method = String(parts[0])
         let path = String(parts[1])
@@ -108,7 +111,8 @@ final class AndroidRelayServer {
     }
 
     private nonisolated static func headerValue(_ request: String, _ name: String) -> String? {
-        request.split(separator: "\n").dropFirst().compactMap { line in
+        request.split(separator: "
+").dropFirst().compactMap { line in
             let p = line.split(separator: ":", maxSplits: 1).map(String.init)
             guard p.count == 2, p[0].trimmingCharacters(in: .whitespacesAndNewlines).lowercased() == name else { return nil }
             return p[1].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -121,7 +125,12 @@ final class AndroidRelayServer {
 
     private nonisolated static func respond(_ connection: NWConnection, _ status: Int, data: Data) {
         let reason = status == 200 ? "OK" : status == 401 ? "Unauthorized" : status == 404 ? "Not Found" : status == 409 ? "Conflict" : "Bad Request"
-        let head = "HTTP/1.1 \(status) \(reason)\r\nContent-Type: application/json\r\nContent-Length: \(data.count)\r\nConnection: close\r\n\r\n"
+        let head = "HTTP/1.1 \(status) \(reason)\r
+Content-Type: application/json\r
+Content-Length: \(data.count)\r
+Connection: close\r
+\r
+"
         var response = Data(head.utf8); response.append(data)
         connection.send(content: response, completion: .contentProcessed { _ in connection.cancel() })
     }
@@ -131,7 +140,17 @@ final class AndroidRelayServer {
     }
 }
 
-struct AndroidQuestionRequest: Codable {\n    let fingerprint: String\n    let selections: [[String]]\n}\n\nstruct AndroidApprovalRequest: Codable {
+struct AndroidQuestionRequest: Codable {
+    let fingerprint: String
+    let selections: [[String]]
+}
+
+struct AndroidInstructionRequest: Codable {
+    let pillId: String
+    let text: String
+}
+
+struct AndroidApprovalRequest: Codable {
     let fingerprint: String
     let decision: String
 }
