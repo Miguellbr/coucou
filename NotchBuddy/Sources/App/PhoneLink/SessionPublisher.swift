@@ -155,7 +155,7 @@ final class SessionPublisher {
 
 /// The part of an AgentTask the iPhone needs. Equatable so unchanged sessions
 /// are not rewritten.
-struct SessionSnapshot: Equatable {
+struct SessionSnapshot: Codable, Equatable {
     static let recordType = "Session"
 
     let pillId: String
