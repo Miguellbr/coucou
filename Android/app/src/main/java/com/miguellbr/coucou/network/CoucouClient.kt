@@ -1,6 +1,7 @@
 package com.miguellbr.coucou.network
 
 import com.miguellbr.coucou.model.Session
+import com.miguellbr.coucou.model.QuestionPayload
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -16,7 +17,7 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
                 selections.forEach { put(JSONArray(it)) }
             })
         }
-        request("/question", "POST", json.toString())?.contains("\\"accepted\\":true") == true
+        request("/question", "POST", json.toString())?.contains("\"accepted\":true") == true
     }
     suspend fun isAlive(): Boolean = withContext(Dispatchers.IO) {
         request("/health")?.contains("\"ok\":true") == true
@@ -33,6 +34,7 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
                     o.getString("cwd"), o.getString("finalLine"), 
                     o.getBoolean("needsApproval"), o.getString("approvalFingerprint"),
                     o.getBoolean("needsAnswer"), o.getString("questionFingerprint"),
+                    parseQuestion(o.optString("questionPayload")),
                     o.optBoolean("acceptsInstructions")
                 ))
             }
@@ -42,6 +44,27 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
     suspend fun approval(fingerprint: String, decision: String): Boolean = withContext(Dispatchers.IO) {
         val body = "{\"fingerprint\":\"${escape(fingerprint)}\",\"decision\":\"${escape(decision)}\"}"
         request("/approval", "POST", body)?.contains("\"accepted\":true") == true
+    }
+
+    private fun parseQuestion(raw: String): QuestionPayload? {
+        if (raw.isBlank()) return null
+        return runCatching {
+            val root = JSONObject(raw)
+            val items = root.getJSONArray("items")
+            QuestionPayload((0 until items.length()).map { i ->
+                val item = items.getJSONObject(i)
+                val options = item.getJSONArray("options")
+                QuestionPayload.Item(
+                    item.getString("question"),
+                    item.optString("header"),
+                    (0 until options.length()).map { j ->
+                        val option = options.getJSONObject(j)
+                        QuestionPayload.Option(option.getString("label"), option.optString("description"))
+                    },
+                    item.optBoolean("multiSelect")
+                )
+            })
+        }.getOrNull()
     }
 
     private fun request(path: String, method: String = "GET", body: String? = null): String? {
