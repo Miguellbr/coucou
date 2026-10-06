@@ -78,6 +78,23 @@ final class AndroidRelayServer {
                     Self.respond(connection, 500, #"{"error":"encode failed"}"#); return
                 }
                 Self.respond(connection, 200, data: data)
+            case ("POST", "/question"):
+                guard let request = try? JSONDecoder().decode(AndroidQuestionRequest.self, from: body) else {
+                    Self.respond(connection, 400, #"{"error":"invalid json"}"#); return
+                }
+                guard let pending = AppState.shared.pendingQuestion else {
+                    Self.respond(connection, 409, #"{"accepted":false}"#); return
+                }
+                let payload = QuestionPayload(ask: pending)
+                guard payload.fingerprint == request.fingerprint,
+                      payload.accepts(request.selections) else {
+                    Self.respond(connection, 409, #"{"accepted":false}"#); return
+                }
+                HookServer.shared.sendQuestionAnswers(
+                    AskQuestion.buildAnswers(questions: pending.questions, selections: request.selections)
+                )
+                Self.respond(connection, 200, #"{"accepted":true}"#)
+
             case ("POST", "/approval"):
                 guard let request = try? JSONDecoder().decode(AndroidApprovalRequest.self, from: body) else {
                     Self.respond(connection, 400, #"{"error":"invalid json"}"#); return
@@ -114,7 +131,7 @@ final class AndroidRelayServer {
     }
 }
 
-struct AndroidApprovalRequest: Codable {
+struct AndroidQuestionRequest: Codable {\n    let fingerprint: String\n    let selections: [[String]]\n}\n\nstruct AndroidApprovalRequest: Codable {
     let fingerprint: String
     let decision: String
 }
