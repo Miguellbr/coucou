@@ -70,6 +70,7 @@ final class SessionPublisher {
     // MARK: Publishing
 
     private func publish(_ snapshots: [String: SessionSnapshot]) {
+        AndroidRelayServer.shared.broadcast(snapshots)
         guard !publishing else { pending = snapshots; return }
         publishing = true
         Task {
