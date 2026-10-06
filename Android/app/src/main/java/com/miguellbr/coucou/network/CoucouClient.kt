@@ -16,7 +16,7 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
                 val o = array.getJSONObject(i)
                 add(Session(
                     o.getString("pillId"), o.getString("name"), o.getString("color"),
-                    o.getString("state"), o.getInt("stepIndex"), o.getInt("steps").let { it },
+                    o.getString("state"), o.getInt("stepIndex"), o.getJSONArray("steps").length(),
                     o.getString("cwd"), o.getString("finalLine"), 
                     o.getBoolean("needsApproval"), o.getString("approvalFingerprint"),
                     o.getBoolean("needsAnswer"), o.getString("questionFingerprint"),
