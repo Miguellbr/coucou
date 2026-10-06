@@ -1,15 +1,10 @@
 name: Android APK Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag"
-        required: true
-        default: "android-v0.1.0"
   push:
-    tags:
-      - "android-v*"
+    branches:
+      - Android
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -21,10 +16,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -35,23 +28,24 @@ jobs:
         with:
           gradle-version: "8.13"
 
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
       - name: Install Android SDK 36
         run: |
-          yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Build APK
+      - name: Build debug APK
         working-directory: Android
         run: gradle assembleDebug --stacktrace
 
       - name: Rename APK
-        run: |
-          cp Android/app/build/outputs/apk/debug/app-debug.apk Coucou-Android.apk
+        run: cp Android/app/build/outputs/apk/debug/app-debug.apk Coucou-Android.apk
 
-      - name: Create release
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
-          name: Coucou Android ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: android-${{ github.run_number }}
+          name: Coucou Android ${{ github.run_number }}
           generate_release_notes: true
           files: Coucou-Android.apk
