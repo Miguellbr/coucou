@@ -54,6 +54,31 @@ object ApprovalNotification {
             .notify(fingerprint.hashCode(), notification)
     }
 
+    fun showQuestion(context: Context, sessionName: String, fingerprint: String, question: String) {
+        ensureChannel(context)
+        val intent = PendingIntent.getActivity(
+            context, fingerprint.hashCode(),
+            Intent(context, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle("Coucou: resposta necessária")
+            .setContentText(sessionName)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(question))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(intent)
+            .build()
+        context.getSystemService(NotificationManager::class.java)
+            .notify(("question:" + fingerprint).hashCode(), notification)
+    }
+
+    fun cancelQuestion(context: Context, fingerprint: String) {
+        context.getSystemService(NotificationManager::class.java)
+            .cancel(("question:" + fingerprint).hashCode())
+    }
+
     fun cancel(context: Context, fingerprint: String) {
         context.getSystemService(NotificationManager::class.java)
             .cancel(fingerprint.hashCode())
