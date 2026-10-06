@@ -6,11 +6,10 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.InetAddress
 
 class CoucouClient(private val baseUrl: String, private val token: String) {
     suspend fun isAlive(): Boolean = withContext(Dispatchers.IO) {
-        request("/health")?.contains("\\"ok\\":true") == true
+        request("/health")?.contains("\"ok\":true") == true
     }
     suspend fun sessions(): List<Session> = withContext(Dispatchers.IO) {
         val body = request("/sessions") ?: return@withContext emptyList()
