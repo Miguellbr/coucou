@@ -54,6 +54,7 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
             val payload = session.questionPayload ?: return@launch
             if (payload.fingerprint != session.questionFingerprint || !payload.accepts(selections)) return@launch
             if (client?.answer(session.questionFingerprint, selections) == true) {
+                ApprovalNotification.cancelQuestion(getApplication(), session.questionFingerprint)
                 _sessions.value = _sessions.value.map {
                     if (it.pillId == session.pillId) it.copy(needsAnswer = false) else it
                 }
