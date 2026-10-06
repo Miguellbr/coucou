@@ -58,38 +58,49 @@ class CoucouService : Service() {
 
                 if (baseUrl != null && token != null) {
                     val client = CoucouClient(baseUrl, token)
-                    val sessions = runCatching { client.sessions() }.getOrNull()
-                    if (sessions != null) {
-                        startForeground(NOTIFICATION_ID, notification("Conectado ao Mac"))
-                        val active = sessions.flatMap { listOf(it.approvalFingerprint, "question:" + it.questionFingerprint) }.toSet()
-                        sessions.filter { it.needsAnswer && it.questionFingerprint.isNotBlank() }.forEach { session ->
-                            if (notified.add("question:" + session.questionFingerprint)) {
-                                ApprovalNotification.showQuestion(
-                                    this@CoucouService,
-                                    session.name,
-                                    session.questionFingerprint,
-                                    session.questionPayload?.items?.firstOrNull()?.question ?: "O Coucou precisa de uma resposta."
-                                )
-                            }
+                    runCatching { client.sessions() }.onSuccess { handleSessions(it) }
+                    val streamed = runCatching {
+                        client.streamSessions { sessions ->
+                            handleSessions(sessions)
+                            startForeground(NOTIFICATION_ID, notification("Conectado ao Mac"))
                         }
-                        sessions.filter { it.needsApproval && it.approvalFingerprint.isNotBlank() }.forEach { session ->
-                            if (notified.add(session.approvalFingerprint)) {
-                                ApprovalNotification.show(
-                                    this@CoucouService,
-                                    session.name,
-                                    session.approvalFingerprint,
-                                    session.finalLine.ifBlank { "Uma ação precisa da sua aprovação." }
-                                )
-                            }
-                        }
-                        notified.retainAll(active)
-                    } else {
+                    }
+                    if (streamed.isFailure) {
                         startForeground(NOTIFICATION_ID, notification("Mac desconectado, tentando reconectar…"))
                     }
                 }
-                delay(2000)
+                delay(1000)
             }
         }
+    }
+
+    private fun handleSessions(sessions: List<com.miguellbr.coucou.model.Session>) {
+        startForeground(NOTIFICATION_ID, notification("Conectado ao Mac"))
+        val active = sessions.flatMap { listOf(it.approvalFingerprint, "question:" + it.questionFingerprint) }.toSet()
+
+        sessions.filter { it.needsAnswer && it.questionFingerprint.isNotBlank() }.forEach { session ->
+            if (notified.add("question:" + session.questionFingerprint)) {
+                ApprovalNotification.showQuestion(
+                    this,
+                    session.name,
+                    session.questionFingerprint,
+                    session.questionPayload?.items?.firstOrNull()?.question
+                        ?: "O Coucou precisa de uma resposta."
+                )
+            }
+        }
+
+        sessions.filter { it.needsApproval && it.approvalFingerprint.isNotBlank() }.forEach { session ->
+            if (notified.add(session.approvalFingerprint)) {
+                ApprovalNotification.show(
+                    this,
+                    session.name,
+                    session.approvalFingerprint,
+                    session.finalLine.ifBlank { "Uma ação precisa da sua aprovação." }
+                )
+            }
+        }
+        notified.retainAll(active)
     }
 
     private fun createChannel() {
