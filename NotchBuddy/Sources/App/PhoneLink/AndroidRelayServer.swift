@@ -23,7 +23,7 @@ final class AndroidRelayServer {
             let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: Self.port)!)
             listener.newConnectionHandler = { [weak self] connection in self?.handle(connection) }
             listener.stateUpdateHandler = { state in
-                if case .failed(let error) = state { print("[AndroidRelay] \\(error)") }
+                if case .failed(let error) = state { print("[AndroidRelay] \(error)") }
             }
             self.listener = listener
             listener.start(queue: queue)
@@ -33,9 +33,9 @@ final class AndroidRelayServer {
             self.eventsListener = events
             events.start(queue: queue)
 
-            CloudProbe.shared.log("[android] relay listening on port \\(Self.port), events on \\(Self.eventsPort), token \\(token.prefix(8))…")
+            CloudProbe.shared.log("[android] relay listening on port \(Self.port), events on \(Self.eventsPort), token \(token.prefix(8))…")
         } catch {
-            CloudProbe.shared.log("[android] couldn\'t start relay: \\(error.localizedDescription)")
+            CloudProbe.shared.log("[android] couldn\'t start relay: \(error.localizedDescription)")
         }
     }
 
@@ -56,7 +56,7 @@ final class AndroidRelayServer {
         let event = Data(("event: sessions\ndata: " + json + "\n\n").utf8)
         for connection in eventConnections.values {
             connection.send(content: event, completion: .contentProcessed { [weak self, weak connection] error in
-                if error != nil { self?.removeEventConnection(connection) }
+                if error != nil { connection?.cancel() }
             })
         }
     }
@@ -122,7 +122,7 @@ final class AndroidRelayServer {
     private func keepAlive(_ connection: NWConnection) {
         guard eventConnections[ObjectIdentifier(connection)] != nil else { return }
         connection.send(content: Data(": keepalive\n\n".utf8), completion: .contentProcessed { [weak self] error in
-            guard error == nil else { self?.removeEventConnection(connection); return }
+            guard error == nil else { connection.cancel(); return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
                 self?.keepAlive(connection)
             }
