@@ -98,6 +98,16 @@ final class AndroidRelayServer {
                 )
                 Self.respond(connection, 200, #"{"accepted":true}"#)
 
+            case ("POST", "/instruction"):
+                guard let request = try? JSONDecoder().decode(AndroidInstructionRequest.self, from: body) else {
+                    Self.respond(connection, 400, #"{"error":"invalid json"}"#); return
+                }
+                let accepted = InstructionRunner.shared.submitAndroidInstruction(
+                    pillId: request.pillId, text: request.text
+                )
+                Self.respond(connection, accepted ? 200 : 409,
+                             accepted ? #"{"accepted":true}"# : #"{"accepted":false}"#)
+
             case ("POST", "/approval"):
                 guard let request = try? JSONDecoder().decode(AndroidApprovalRequest.self, from: body) else {
                     Self.respond(connection, 400, #"{"error":"invalid json"}"#); return
