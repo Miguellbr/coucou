@@ -39,6 +39,7 @@ fun CoucouScreen(vm: CoucouViewModel = viewModel()) {
 
 @Composable
 private fun SessionCard(session: Session, vm: CoucouViewModel) {
+    var instruction by remember(session.pillId) { mutableStateOf("") }
     var selections by remember(session.questionFingerprint) {
         mutableStateOf(List(session.questionPayload?.items?.size ?: 0) { emptyList<String>() })
     }
@@ -48,6 +49,28 @@ private fun SessionCard(session: Session, vm: CoucouViewModel) {
             Text(session.name, style = MaterialTheme.typography.titleMedium)
             Text(session.state)
             if (session.finalLine.isNotBlank()) Text(session.finalLine)
+
+            if (session.acceptsInstructions) {
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                Text("Enviar instrução", style = MaterialTheme.typography.titleMedium)
+                OutlinedTextField(
+                    value = instruction,
+                    onValueChange = { instruction = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ex.: continue a tarefa...") },
+                    minLines = 2,
+                    maxLines = 5
+                )
+                Button(
+                    onClick = {
+                        vm.sendInstruction(session, instruction)
+                        instruction = ""
+                    },
+                    enabled = instruction.isNotBlank() && instruction.length <= 8000
+                ) {
+                    Text("Enviar")
+                }
+            }
 
             if (session.needsApproval) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
