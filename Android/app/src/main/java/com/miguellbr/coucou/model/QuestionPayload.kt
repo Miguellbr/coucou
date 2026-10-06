@@ -1,14 +1,9 @@
 package com.miguellbr.coucou.model
 
 import java.security.MessageDigest
-import kotlinx.serialization.Serializable
 
-@Serializable
 data class QuestionPayload(val items: List<Item>) {
-    @Serializable
     data class Option(val label: String, val description: String)
-
-    @Serializable
     data class Item(
         val question: String,
         val header: String,
