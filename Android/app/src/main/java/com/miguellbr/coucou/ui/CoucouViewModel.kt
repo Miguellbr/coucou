@@ -49,6 +49,18 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun answer(session: Session, selections: List<List<String>>) {
+        viewModelScope.launch {
+            val payload = session.questionPayload ?: return@launch
+            if (payload.fingerprint != session.questionFingerprint || !payload.accepts(selections)) return@launch
+            if (client?.answer(session.questionFingerprint, selections) == true) {
+                _sessions.value = _sessions.value.map {
+                    if (it.pillId == session.pillId) it.copy(needsAnswer = false) else it
+                }
+            }
+        }
+    }
+
     fun approve(session: Session) {
         viewModelScope.launch {
             if (client?.approval(session.approvalFingerprint, "allow") == true) {
