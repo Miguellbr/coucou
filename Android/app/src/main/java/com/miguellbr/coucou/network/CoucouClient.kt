@@ -19,6 +19,14 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
         }
         request("/question", "POST", json.toString())?.contains("\"accepted\":true") == true
     }
+    suspend fun instruction(pillId: String, text: String): Boolean = withContext(Dispatchers.IO) {
+        val json = JSONObject().apply {
+            put("pillId", pillId)
+            put("text", text)
+        }
+        request("/instruction", "POST", json.toString())?.contains(""accepted":true") == true
+    }
+
     suspend fun isAlive(): Boolean = withContext(Dispatchers.IO) {
         request("/health")?.contains("\"ok\":true") == true
     }
