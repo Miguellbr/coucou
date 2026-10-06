@@ -49,6 +49,13 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun sendInstruction(session: Session, text: String) {
+        viewModelScope.launch {
+            if (!session.acceptsInstructions || text.isBlank()) return@launch
+            client?.instruction(session.pillId, text.trim())
+        }
+    }
+
     fun answer(session: Session, selections: List<List<String>>) {
         viewModelScope.launch {
             val payload = session.questionPayload ?: return@launch
