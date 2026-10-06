@@ -31,7 +31,7 @@ fun CoucouScreen(vm: CoucouViewModel = viewModel()) {
             modifier = Modifier.fillMaxWidth(), singleLine = true)
         OutlinedTextField(token, { token = it }, label = { Text("Token do relay") },
             modifier = Modifier.fillMaxWidth(), singleLine = true)
-        Button(onClick = { vm.connect(host, token) }) { Text("Conectar") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {\n            Button(onClick = { vm.discoverAndConnect() }) { Text("Encontrar Mac") }\n            Button(onClick = { vm.connect(host, token) }) { Text("Manual") }\n        }
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(sessions, key = { it.pillId }) { session ->
