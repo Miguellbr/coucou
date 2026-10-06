@@ -18,9 +18,9 @@ class CoucouViewModel : ViewModel() {
     val connected: StateFlow<Boolean> = _connected.asStateFlow()
 
     private var client: CoucouClient? = null
-    private var pollJob: Job? = null
+    private var pollJob: Job? = null\n    private val discovery = com.miguellbr.coucou.network.RelayDiscovery()
 
-    fun connect(baseUrl: String, token: String) {
+    fun discoverAndConnect() {\n        viewModelScope.launch {\n            val candidate = discovery.discover() ?: return@launch\n            connect("http://${candidate.host}:${candidate.port}", candidate.token)\n        }\n    }\n\n    fun connect(baseUrl: String, token: String) {
         pollJob?.cancel()
         client = CoucouClient(baseUrl.trimEnd('/'), token.trim())
         pollJob = viewModelScope.launch {
