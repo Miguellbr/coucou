@@ -13,6 +13,7 @@ data class Session(
     val approvalFingerprint: String,
     val needsAnswer: Boolean,
     val questionFingerprint: String,
+    val questionPayload: QuestionPayload?,
     val acceptsInstructions: Boolean
 )
 
