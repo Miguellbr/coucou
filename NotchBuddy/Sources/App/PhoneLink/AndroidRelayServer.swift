@@ -23,7 +23,7 @@ final class AndroidRelayServer {
             let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: Self.port)!)
             listener.newConnectionHandler = { [weak self] connection in self?.handle(connection) }
             listener.stateUpdateHandler = { state in
-                if case .failed(let error) = state { print("[AndroidRelay] (error)") }
+                if case .failed(let error) = state { print("[AndroidRelay] \\(error)") }
             }
             self.listener = listener
             listener.start(queue: queue)
@@ -33,9 +33,9 @@ final class AndroidRelayServer {
             self.eventsListener = events
             events.start(queue: queue)
 
-            CloudProbe.shared.log("[android] relay listening on (Self.port), events on (Self.eventsPort), token (token.prefix(8))…")
+            CloudProbe.shared.log("[android] relay listening on port \\(Self.port), events on \\(Self.eventsPort), token \\(token.prefix(8))…")
         } catch {
-            CloudProbe.shared.log("[android] couldn't start relay: (error.localizedDescription)")
+            CloudProbe.shared.log("[android] couldn\'t start relay: \\(error.localizedDescription)")
         }
     }
 
