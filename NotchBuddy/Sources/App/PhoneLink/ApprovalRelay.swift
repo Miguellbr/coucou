@@ -156,6 +156,23 @@ final class ApprovalRelay {
         }
     }
 
+    func submitAndroidDecision(_ decision: String, fingerprint: String) -> Bool {
+        guard current?.fingerprint == fingerprint,
+              let pending = AppState.shared.pendingApproval,
+              Self.fingerprint(pending) == fingerprint else {
+            return false
+        }
+        switch decision {
+        case "allow":
+            HookServer.shared.sendApprovalDecision("allow")
+        case "deny":
+            HookServer.shared.sendApprovalDecision("deny")
+        default:
+            return false
+        }
+        return true
+    }
+
     private func log(_ message: String) {
         CloudProbe.shared.log("[approval] \(message)")
     }
