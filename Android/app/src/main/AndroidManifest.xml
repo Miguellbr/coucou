@@ -4,7 +4,7 @@
     <application
         android:theme="@style/Theme.Coucou"
         android:label="Coucou"
-        android:allowBackup="true">
+        android:allowBackup="true"\n        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true">
