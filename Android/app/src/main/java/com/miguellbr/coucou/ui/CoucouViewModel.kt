@@ -41,10 +41,21 @@ class CoucouViewModel(application: Application) : AndroidViewModel(application) 
 
         pollJob = viewModelScope.launch {
             while (true) {
-                val result = runCatching { client!!.sessions() }
-                _connected.value = result.isSuccess
-                result.onSuccess { _sessions.value = it }
-                delay(2000)
+                val current = client ?: break
+                val streamed = runCatching {
+                    current.streamSessions { incoming ->
+                        _sessions.value = incoming
+                        _connected.value = true
+                    }
+                }
+                _connected.value = false
+                if (streamed.isFailure) {
+                    runCatching { current.sessions() }.onSuccess {
+                        _sessions.value = it
+                        _connected.value = true
+                    }
+                }
+                delay(1000)
             }
         }
     }
