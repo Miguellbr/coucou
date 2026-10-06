@@ -28,7 +28,9 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
     }
 
     suspend fun streamSessions(onSessions: (List<Session>) -> Unit) = withContext(Dispatchers.IO) {
-        val url = baseUrl.replace(Regex(":(\\d+)$")) { ":" + (it.groupValues[1].toInt() + 2) } + "/events"
+        val match = Regex(":(\\\\d+)$").find(baseUrl)
+        val port = match?.groupValues?.get(1)?.toIntOrNull() ?: 8765
+        val url = baseUrl.removeSuffix(":$port") + ":" + (port + 2) + "/events"
         val c = URL(url).openConnection() as HttpURLConnection
         try {
             c.requestMethod = "GET"
@@ -37,36 +39,20 @@ class CoucouClient(private val baseUrl: String, private val token: String) {
             c.setRequestProperty("Authorization", "Bearer " + token)
             c.setRequestProperty("Accept", "text/event-stream")
             if (c.responseCode !in 200..299) return@withContext
-            val reader = c.inputStream.bufferedReader()
-            var data = StringBuilder()
-            while (true) {
-                val line = reader.readLine() ?: break
-                if (line.startsWith("data: ")) data.append(line.removePrefix("data: "))
-                if (line.isEmpty() && data.isNotEmpty()) {
-                    val json = data.toString()
-                    data = StringBuilder()
-                    runCatching { onSessions(parseSessions(json)) }
+            c.inputStream.bufferedReader().use { reader ->
+                var data = ""
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    when {
+                        line.startsWith("data: ") -> data += line.removePrefix("data: ")
+                        line.isEmpty() && data.isNotEmpty() -> {
+                            runCatching { onSessions(parseSessions(data)) }
+                            data = ""
+                        }
+                    }
                 }
             }
         } finally { c.disconnect() }
-    }
-
-    private fun parseSessions(body: String): List<Session> {
-        val array = JSONArray(body)
-        return buildList {
-            for (i in 0 until array.length()) {
-                val o = array.getJSONObject(i)
-                add(Session(
-                    o.getString("pillId"), o.getString("name"), o.getString("color"),
-                    o.getString("state"), o.getInt("stepIndex"), o.getJSONArray("steps").length(),
-                    o.getString("cwd"), o.getString("finalLine"),
-                    o.getBoolean("needsApproval"), o.getString("approvalFingerprint"),
-                    o.getBoolean("needsAnswer"), o.getString("questionFingerprint"),
-                    parseQuestion(o.optString("questionPayload")),
-                    o.optBoolean("acceptsInstructions")
-                ))
-            }
-        }
     }
 
     suspend fun isAlive(): Boolean = withContext(Dispatchers.IO) {
