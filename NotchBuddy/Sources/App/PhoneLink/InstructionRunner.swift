@@ -122,7 +122,7 @@ final class InstructionRunner {
         guard !text.isEmpty, text.count <= 8000 else { log("Android instruction ignored: empty or too long"); return false }
         guard pillId == "integration_claude" || pillId == "agent_cursor" else { log("Android instruction ignored: (pillId) can't take instructions"); return false }
         guard let session = TurnRecorder.shared.lastSession(for: pillId) else {
-            log("Android instruction ignored: no session for (pillId)")
+            log("Android instruction ignored: no session for \\(pillId)")
             return false
         }
         var isDirectory: ObjCBool = false
